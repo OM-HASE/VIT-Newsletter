@@ -110,3 +110,44 @@ exports.getMyAchievements = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// 🌍 PUBLIC: GET APPROVED ACHIEVEMENTS WITH FILTERS
+exports.getApprovedAchievements = async (req, res) => {
+  try {
+    const { class: studentClass, teacher, date } = req.query;
+    let query = { status: "approved" };
+
+    if (studentClass) {
+      query = {
+        ...query,
+      };
+    }
+
+    if (teacher) {
+      query.teacher = teacher;
+    }
+
+    if (date) {
+      query.date = {
+        $gte: new Date(date),
+        $lte: new Date(date)
+      };
+    }
+
+    let achievements = await Achievement.find(query)
+      .populate("createdBy", "name class") 
+      .populate("teacher", "name")        
+      .sort({ createdAt: -1 });
+
+    if (studentClass) {
+      achievements = achievements.filter(
+        (a) => a.createdBy && a.createdBy.class === studentClass
+      );
+    }
+
+    res.json(achievements);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

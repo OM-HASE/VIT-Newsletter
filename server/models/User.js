@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
+  class: {
+    type: String,
+    default: ""
+  },
+  
+
   assignedTeacher: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

@@ -5,42 +5,60 @@ const jwt = require("jsonwebtoken");
 // REGISTER
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, type } = req.body;
-    // type = "student" OR "teacher"
+    const { name, email, password, type, studentClass, classAssigned } = req.body;
 
-    // Only allow @vit.edu
     if (!email.endsWith("@vit.edu")) {
       return res.status(400).json({ message: "Use VIT email only" });
     }
 
-    // Check existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 🔥 Determine Role
     let role = "student";
 
+    // 👩‍🏫 TEACHER / ADMIN LOGIC
     if (type === "teacher") {
       role = "teacher";
 
-      // Check if admin
       const adminEmails = process.env.ADMIN_EMAILS.split(",");
       if (adminEmails.includes(email)) {
         role = "admin";
       }
     }
 
-    // Create user
+    let assignedTeacher = null;
+
+    // 🧑‍🎓 STUDENT → AUTO ASSIGN TEACHER
+    if (type === "student") {
+      if (!studentClass) {
+        return res.status(400).json({ message: "Class is required" });
+      }
+
+      // find teacher for that class
+      const teacher = await User.findOne({
+        role: { $in: ["teacher", "admin"] },
+        classAssigned: studentClass
+      });
+
+      if (!teacher) {
+        return res.status(400).json({ message: "No teacher found for this class" });
+      }
+
+      assignedTeacher = teacher._id;
+    }
+
     const user = new User({
       name,
       email,
       password: hashedPassword,
-      role
+      role,
+      class: type === "student" ? studentClass : "",
+      classAssigned: type === "teacher" ? classAssigned : "",
+      assignedTeacher
     });
 
     await user.save();
