@@ -5,3 +5,6 @@ export const updateProfile = (formData) =>
 
 export const changePassword = (data) =>
   axiosInstance.put("/users/password", data);
+
+export const getProfile = () =>
+  axiosInstance.get("/users/me");

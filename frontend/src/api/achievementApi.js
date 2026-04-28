@@ -22,6 +22,12 @@ export const likeAchievement = (id) =>
 export const commentAchievement = (id, text) =>
   axiosInstance.post(`/achievements/comment/${id}`, { text });
 
+export const deleteAchievement = (id) =>
+  axiosInstance.delete(`/achievements/delete/${id}`);
+
+export const hideAchievement = (id) =>
+  axiosInstance.put(`/achievements/hide/${id}`);
+
 export const getPublicAchievements = (filters = {}) => {
   let query = "/achievements/public?";
 

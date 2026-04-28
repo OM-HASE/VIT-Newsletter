@@ -1,29 +1,46 @@
 const Achievement = require("../models/Achievement");
 const User = require("../models/User");
 
+
+// 🔥 CREATE (UPDATED FOR TEACHER)
 exports.createAchievement = async (req, res) => {
   try {
     const { title, content, date } = req.body;
 
-    const studentId = req.user.id;
-
-    const student = await User.findById(studentId);
-
-    if (!student.assignedTeacher) {
-      return res.status(400).json({ message: "No teacher assigned" });
-    }
+    const userId = req.user.id;
+    const user = await User.findById(userId);
 
     const imageUrls = req.files?.map(file => file.path) || [];
 
-    const achievement = new Achievement({
-      title,
-      content,
-      date,
-      images: imageUrls,
-      createdBy: studentId,
-      teacher: student.assignedTeacher,
-      status: "pending"
-    });
+    let achievement;
+    if (user.role === "teacher" || user.role === "admin") {
+      achievement = new Achievement({
+        title,
+        content,
+        date,
+        images: imageUrls,
+        createdBy: userId,
+        teacher: userId,
+        status: "approved",
+        isTeacherPost: true
+      });
+
+    } else {
+      // 🧑‍🎓 STUDENT FLOW (UNCHANGED)
+      if (!user.assignedTeacher) {
+        return res.status(400).json({ message: "No teacher assigned" });
+      }
+
+      achievement = new Achievement({
+        title,
+        content,
+        date,
+        images: imageUrls,
+        createdBy: userId,
+        teacher: user.assignedTeacher,
+        status: "pending"
+      });
+    }
 
     await achievement.save();
 
@@ -35,17 +52,20 @@ exports.createAchievement = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-  console.log("FILES:", req.files);
 };
 
-
-// 👩‍🏫 TEACHER: VIEW ASSIGNED ACHIEVEMENTS
 exports.getTeacherAchievements = async (req, res) => {
   try {
     const teacherId = req.user.id;
 
-    const achievements = await Achievement.find({ teacher: teacherId })
-      .populate("createdBy", "name email");
+    const achievements = await Achievement.find({
+      $or: [
+        { teacher: teacherId },          // student posts
+        { createdBy: teacherId }         // teacher posts
+      ]
+    })
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
 
     res.json(achievements);
 
@@ -54,13 +74,9 @@ exports.getTeacherAchievements = async (req, res) => {
   }
 };
 
-
-// 👩‍🏫 TEACHER: APPROVE
 exports.approveAchievement = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const achievement = await Achievement.findById(id);
+    const achievement = await Achievement.findById(req.params.id);
 
     if (!achievement) {
       return res.status(404).json({ message: "Not found" });
@@ -76,13 +92,9 @@ exports.approveAchievement = async (req, res) => {
   }
 };
 
-
-// 👩‍🏫 TEACHER: REJECT
 exports.rejectAchievement = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const achievement = await Achievement.findById(id);
+    const achievement = await Achievement.findById(req.params.id);
 
     if (!achievement) {
       return res.status(404).json({ message: "Not found" });
@@ -98,13 +110,71 @@ exports.rejectAchievement = async (req, res) => {
   }
 };
 
+exports.deleteAchievement = async (req, res) => {
+  try {
+    const achievement = await Achievement.findById(req.params.id);
 
-// 🧑‍🎓 STUDENT: VIEW OWN ACHIEVEMENTS
+    if (!achievement) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    // 🔒 Only owner or admin
+    if (
+      achievement.createdBy.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
+      return res.status(403).json({ message: "Not allowed" });
+    }
+
+    await achievement.deleteOne();
+
+    res.json({ message: "Deleted successfully" });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.hideAchievement = async (req, res) => {
+  try {
+    const achievement = await Achievement.findById(req.params.id);
+
+    if (!achievement) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    // 🔒 PERMISSION CHECK
+    const isOwner = achievement.createdBy.toString() === req.user.id;
+    const isAssignedTeacher = achievement.teacher.toString() === req.user.id;
+
+    if (!isOwner && !isAssignedTeacher && req.user.role !== "admin") {
+      return res.status(403).json({
+        message: "Not allowed",
+      });
+    }
+
+    // 🔥 TOGGLE LOGIC (HIDE / UNHIDE)
+    achievement.isHidden = !achievement.isHidden;
+
+    await achievement.save();
+
+    res.json({
+      message: achievement.isHidden
+        ? "Post hidden"
+        : "Post visible again",
+      isHidden: achievement.isHidden,
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.getMyAchievements = async (req, res) => {
   try {
-    const studentId = req.user.id;
-
-    const achievements = await Achievement.find({ createdBy: studentId });
+    const achievements = await Achievement.find({
+      createdBy: req.user.id
+    });
 
     res.json(achievements);
 
@@ -113,17 +183,14 @@ exports.getMyAchievements = async (req, res) => {
   }
 };
 
-// 🌍 PUBLIC: GET APPROVED ACHIEVEMENTS WITH FILTERS
 exports.getApprovedAchievements = async (req, res) => {
   try {
     const { class: studentClass, teacher, date } = req.query;
-    let query = { status: "approved" };
 
-    if (studentClass) {
-      query = {
-        ...query,
-      };
-    }
+    let query = {
+      status: "approved",
+      isHidden: false // 🔥 IMPORTANT
+    };
 
     if (teacher) {
       query.teacher = teacher;
@@ -137,8 +204,8 @@ exports.getApprovedAchievements = async (req, res) => {
     }
 
     let achievements = await Achievement.find(query)
-      .populate("createdBy", "name class") 
-      .populate("teacher", "name")        
+      .populate("createdBy", "name class")
+      .populate("teacher", "name")
       .sort({ createdAt: -1 });
 
     if (studentClass) {
@@ -158,10 +225,6 @@ exports.likeAchievement = async (req, res) => {
   try {
     const achievement = await Achievement.findById(req.params.id);
 
-    if (!achievement) {
-      return res.status(404).json({ message: "Not found" });
-    }
-
     if (!achievement.likes) achievement.likes = [];
 
     const alreadyLiked = achievement.likes.some(
@@ -177,31 +240,31 @@ exports.likeAchievement = async (req, res) => {
     }
 
     await achievement.save();
-
     res.json(achievement);
+
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
+
 exports.addComment = async (req, res) => {
   try {
-    const { text } = req.body;
-
     const achievement = await Achievement.findById(req.params.id);
 
     achievement.comments.push({
       user: req.user.id,
-      text,
+      text: req.body.text,
     });
 
     await achievement.save();
 
     res.json(achievement);
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 exports.getSingleAchievement = async (req, res) => {
   try {
@@ -209,11 +272,8 @@ exports.getSingleAchievement = async (req, res) => {
       .populate("createdBy", "name email")
       .populate("teacher", "name");
 
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
     res.json(post);
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

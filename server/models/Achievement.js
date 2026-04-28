@@ -31,6 +31,8 @@ const achievementSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    isTeacherPost: { type: Boolean, default: false },
+    isHidden: { type: Boolean, default: false },
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
