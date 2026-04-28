@@ -1,12 +1,12 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const testRoutes = require("./routes/testRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
-require("dotenv").config();
-
 const app = express();
+const userRoutes = require("./routes/userRoutes");
 
 // middleware
 app.use(express.json());
@@ -14,6 +14,8 @@ app.use(cors());
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/achievements", achievementRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/users", userRoutes);
 
 
 

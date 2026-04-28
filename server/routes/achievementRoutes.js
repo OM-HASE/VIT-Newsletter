@@ -7,14 +7,18 @@ const {
   approveAchievement,
   rejectAchievement,
   getMyAchievements,
-  getApprovedAchievements
+  getApprovedAchievements,
+  likeAchievement,
+  addComment,
+  getSingleAchievement    
 } = require("../controllers/achievementController");
 
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
 
 // 🧑‍🎓 Student routes
-router.post("/", protect, authorizeRoles("student"), createAchievement);
+router.post("/",protect,authorizeRoles("student"),upload.array("images", 5),createAchievement);
 router.get("/my", protect, authorizeRoles("student"), getMyAchievements);
 
 
@@ -26,5 +30,8 @@ router.put("/reject/:id", protect, authorizeRoles("teacher", "admin"), rejectAch
 
 // Public route (no auth needed)
 router.get("/public", getApprovedAchievements);
+router.put("/like/:id", protect, likeAchievement);
+router.post("/comment/:id", protect, addComment);
+router.get("/:id", getSingleAchievement);
 
 module.exports = router;

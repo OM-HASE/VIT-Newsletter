@@ -3,22 +3,23 @@ const User = require("../models/User");
 
 exports.createAchievement = async (req, res) => {
   try {
-    const { title, content, date, image } = req.body;
+    const { title, content, date } = req.body;
 
     const studentId = req.user.id;
 
-    // find student
     const student = await User.findById(studentId);
 
     if (!student.assignedTeacher) {
       return res.status(400).json({ message: "No teacher assigned" });
     }
 
+    const imageUrls = req.files?.map(file => file.path) || [];
+
     const achievement = new Achievement({
       title,
       content,
       date,
-      image,
+      images: imageUrls,
       createdBy: studentId,
       teacher: student.assignedTeacher,
       status: "pending"
@@ -27,13 +28,14 @@ exports.createAchievement = async (req, res) => {
     await achievement.save();
 
     res.status(201).json({
-      message: "Achievement submitted for approval",
+      message: "Achievement submitted successfully",
       achievement
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message });
   }
+  console.log("FILES:", req.files);
 };
 
 
@@ -149,5 +151,70 @@ exports.getApprovedAchievements = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.likeAchievement = async (req, res) => {
+  try {
+    const achievement = await Achievement.findById(req.params.id);
+
+    if (!achievement) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    if (!achievement.likes) achievement.likes = [];
+
+    const alreadyLiked = achievement.likes.some(
+      (id) => id.toString() === req.user.id
+    );
+
+    if (alreadyLiked) {
+      achievement.likes = achievement.likes.filter(
+        (id) => id.toString() !== req.user.id
+      );
+    } else {
+      achievement.likes.push(req.user.id);
+    }
+
+    await achievement.save();
+
+    res.json(achievement);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.addComment = async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    const achievement = await Achievement.findById(req.params.id);
+
+    achievement.comments.push({
+      user: req.user.id,
+      text,
+    });
+
+    await achievement.save();
+
+    res.json(achievement);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getSingleAchievement = async (req, res) => {
+  try {
+    const post = await Achievement.findById(req.params.id)
+      .populate("createdBy", "name email")
+      .populate("teacher", "name");
+
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
