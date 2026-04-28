@@ -3,6 +3,9 @@ import {
   getTeacherAchievements,
   approveAchievement,
   rejectAchievement,
+  createAchievement,
+  deleteAchievement,
+  hideAchievement,
 } from "../../api/achievementApi";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -12,7 +15,10 @@ function TeacherDashboard() {
   const [activeId, setActiveId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  const token = localStorage.getItem("token");
+  // 🔥 NEW: Create Post
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [images, setImages] = useState([]);
 
   /* 🔹 FETCH */
   const fetchAchievements = useCallback(async () => {
@@ -22,25 +28,50 @@ function TeacherDashboard() {
     } catch {
       toast.error("Failed to fetch");
     }
-    
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAchievements();
   }, [fetchAchievements]);
+
+  /* 🔹 CREATE POST (AUTO APPROVED) */
+  const handleCreate = async () => {
+    if (!title || !content) {
+      toast.error("Title & Content required");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("content", content);
+      formData.append("date", new Date());
+
+      images.forEach((img) => formData.append("images", img));
+
+      await createAchievement(formData);
+
+      toast.success("Post created");
+      setTitle("");
+      setContent("");
+      setImages([]);
+
+      fetchAchievements();
+    } catch {
+      toast.error("Failed to create");
+    }
+  };
 
   /* 🔹 ACTIONS */
   const handleApprove = async (id) => {
     try {
       setActiveId(id);
-
       await approveAchievement(id);
-
       toast.success("Approved");
       fetchAchievements();
-    } catch(err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Failed");
+    } catch {
+      toast.error("Failed");
     } finally {
       setActiveId(null);
     }
@@ -49,9 +80,7 @@ function TeacherDashboard() {
   const handleReject = async (id) => {
     try {
       setActiveId(id);
-
       await rejectAchievement(id);
-
       toast.success("Rejected");
       fetchAchievements();
     } catch {
@@ -61,10 +90,26 @@ function TeacherDashboard() {
     }
   };
 
-  /* 🔹 FILTERED DATA */
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this post?")) return;
+
+    await deleteAchievement(id);
+    toast.success("Deleted");
+    fetchAchievements();
+  };
+
+  const handleHide = async (id) => {
+    await hideAchievement(id);
+    toast.success("Hidden from public");
+    fetchAchievements();
+  };
+
+  /* 🔹 FILTER */
   const filtered =
     filter === "all"
       ? achievements
+      : filter === "my"
+      ? achievements.filter((a) => a.isTeacherPost)
       : achievements.filter((a) => a.status === filter);
 
   return (
@@ -73,31 +118,56 @@ function TeacherDashboard() {
 
       <div className="max-w-3xl mx-auto space-y-4">
 
-        {/* 🔥 HEADER */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        {/* 🔥 CREATE POST */}
+        <div className="bg-white border rounded-xl p-4 shadow-sm">
+          <h2 className="font-semibold mb-3">Create Post</h2>
 
-          <h1 className="text-lg font-semibold mb-3">
-            Review Achievements
-          </h1>
+          <input
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full border p-2 rounded mb-2"
+          />
 
-          <div className="flex gap-2">
-            {["all", "pending", "approved", "rejected"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1 text-sm rounded-full border ${
-                  filter === f
-                    ? "bg-[#0a66c2] text-white"
-                    : "text-gray-600"
-                }`}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
-            ))}
-          </div>
+          <textarea
+            placeholder="Share something..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full border p-2 rounded mb-2"
+          />
+
+          <input
+            type="file"
+            multiple
+            onChange={(e) => setImages([...e.target.files])}
+          />
+
+          <button
+            onClick={handleCreate}
+            className="mt-3 px-4 py-2 bg-[#0a66c2] text-white rounded hover:bg-blue-700"
+          >
+            Post
+          </button>
         </div>
 
-        {/* 🔥 FEED */}
+        {/* 🔥 FILTER */}
+        <div className="bg-white border rounded-xl p-4 shadow-sm flex gap-2 flex-wrap">
+          {["all", "pending", "approved", "rejected", "my"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1 text-sm rounded-full border ${
+                filter === f
+                  ? "bg-[#0a66c2] text-white"
+                  : "text-gray-600"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
+        {/* 🔥 POSTS */}
         {filtered.length === 0 ? (
           <EmptyState />
         ) : (
@@ -108,6 +178,8 @@ function TeacherDashboard() {
               activeId={activeId}
               onApprove={handleApprove}
               onReject={handleReject}
+              onDelete={handleDelete}
+              onHide={handleHide}
               setSelectedImage={setSelectedImage}
             />
           ))
@@ -133,9 +205,10 @@ function TeacherDashboard() {
 /* 🔥 POST CARD */
 function PostCard({
   data,
-  activeId,
   onApprove,
   onReject,
+  onDelete,
+  onHide,
   setSelectedImage,
 }) {
   const initials = data.createdBy?.name
@@ -152,7 +225,7 @@ function PostCard({
       : "bg-yellow-100 text-yellow-700";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+    <div className="bg-white border rounded-xl shadow-sm p-4">
 
       {/* HEADER */}
       <div className="flex justify-between mb-3">
@@ -188,54 +261,48 @@ function PostCard({
 
       {/* IMAGES */}
       {data.images?.length > 0 && (
-        <div
-          className={`grid gap-2 ${
-            data.images.length === 1
-              ? "grid-cols-1"
-              : data.images.length === 2
-              ? "grid-cols-2"
-              : "grid-cols-3"
-          }`}
-        >
+        <div className="grid grid-cols-2 gap-2">
           {data.images.map((img, i) => (
             <img
               key={i}
               src={img}
               onClick={() => setSelectedImage(img)}
-              className="h-40 w-full object-cover rounded-md cursor-pointer hover:scale-[1.02] transition"
+              className="h-40 w-full object-cover rounded-md cursor-pointer"
             />
           ))}
         </div>
       )}
 
       {/* ACTIONS */}
-      {data.status === "pending" && (
-        <div className="flex gap-3 mt-4">
-          <button
-            disabled={activeId === data._id}
-            onClick={() => onApprove(data._id)}
-            className="flex-1 py-2 bg-green-500 text-white rounded-md text-sm hover:bg-green-600 disabled:opacity-50"
-          >
-            {activeId === data._id ? "Processing..." : "Approve"}
-          </button>
+      <div className="flex flex-wrap gap-2 mt-4 text-sm">
 
-          <button
-            disabled={activeId === data._id}
-            onClick={() => onReject(data._id)}
-            className="flex-1 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 disabled:opacity-50"
-          >
-            {activeId === data._id ? "Processing..." : "Reject"}
-          </button>
-        </div>
-      )}
+        {data.status === "pending" && (
+          <>
+            <button onClick={() => onApprove(data._id)}>
+              Approve
+            </button>
+            <button onClick={() => onReject(data._id)}>
+              Reject
+            </button>
+          </>
+        )}
+
+        <button onClick={() => onDelete(data._id)}>
+          Delete
+        </button>
+
+        <button onClick={() => onHide(data._id)}>
+          Hide
+        </button>
+
+      </div>
     </div>
   );
 }
 
-/* 🔥 EMPTY */
 function EmptyState() {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-gray-500">
+    <div className="bg-white border rounded-xl p-6 text-center text-gray-500">
       No achievements to review
     </div>
   );

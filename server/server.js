@@ -19,6 +19,7 @@ app.use("/api/users", userRoutes);
 
 
 
+
 // DB connection
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))

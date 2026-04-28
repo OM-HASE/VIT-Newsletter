@@ -27,7 +27,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ""
   },
-  
 
   assignedTeacher: {
     type: mongoose.Schema.Types.ObjectId,
@@ -36,6 +35,11 @@ const userSchema = new mongoose.Schema({
   },
 
   classAssigned: {
+    type: String,
+    default: ""
+  },
+
+  image: {
     type: String,
     default: ""
   }

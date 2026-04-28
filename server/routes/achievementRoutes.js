@@ -10,7 +10,9 @@ const {
   getApprovedAchievements,
   likeAchievement,
   addComment,
-  getSingleAchievement    
+  getSingleAchievement,
+  deleteAchievement,
+  hideAchievement
 } = require("../controllers/achievementController");
 
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
@@ -27,6 +29,8 @@ router.get("/my", protect, authorizeRoles("student"), getMyAchievements);
 router.get("/teacher", protect, authorizeRoles("teacher", "admin"), getTeacherAchievements);
 router.put("/approve/:id", protect, authorizeRoles("teacher", "admin"), approveAchievement);
 router.put("/reject/:id", protect, authorizeRoles("teacher", "admin"), rejectAchievement);
+router.delete("/delete/:id", protect, deleteAchievement);
+router.put("/hide/:id", protect, hideAchievement);
 
 // Public route (no auth needed)
 router.get("/public", getApprovedAchievements);
