@@ -20,7 +20,7 @@ const upload = require("../middleware/uploadMiddleware");
 
 
 // 🧑‍🎓 Student routes
-router.post("/",protect,authorizeRoles("student"),upload.array("images", 5),createAchievement);
+router.post("/",protect,authorizeRoles("student", "teacher"),upload.array("images", 5),createAchievement);
 router.get("/my", protect, authorizeRoles("student"), getMyAchievements);
 
 

@@ -64,7 +64,7 @@ exports.getTeacherAchievements = async (req, res) => {
         { createdBy: teacherId }         // teacher posts
       ]
     })
-      .populate("createdBy", "name email")
+      .populate("createdBy", "name email image")
       .sort({ createdAt: -1 });
 
     res.json(achievements);
@@ -174,7 +174,9 @@ exports.getMyAchievements = async (req, res) => {
   try {
     const achievements = await Achievement.find({
       createdBy: req.user.id
-    });
+    })
+      .populate("createdBy", "name image email")
+      .sort({ createdAt: -1 });
 
     res.json(achievements);
 
@@ -204,8 +206,9 @@ exports.getApprovedAchievements = async (req, res) => {
     }
 
     let achievements = await Achievement.find(query)
-      .populate("createdBy", "name class")
-      .populate("teacher", "name")
+      .populate("createdBy", "name class image")
+      .populate("teacher", "name image")
+      .populate("comments.user", "name image")
       .sort({ createdAt: -1 });
 
     if (studentClass) {
@@ -269,8 +272,8 @@ exports.addComment = async (req, res) => {
 exports.getSingleAchievement = async (req, res) => {
   try {
     const post = await Achievement.findById(req.params.id)
-      .populate("createdBy", "name email")
-      .populate("teacher", "name");
+      .populate("createdBy", "name email image")
+      .populate("teacher", "name image");
 
     res.json(post);
 

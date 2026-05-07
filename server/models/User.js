@@ -42,7 +42,22 @@ const userSchema = new mongoose.Schema({
   image: {
     type: String,
     default: ""
-  }
+  },
+  
+  isBanned: {
+  type: Boolean,
+  default: false,
+},
+
+bio: {
+  type: String,
+  default: "",
+},
+
+lastActive: {
+  type: Date,
+  default: Date.now,
+},
 
 }, { timestamps: true });
 
