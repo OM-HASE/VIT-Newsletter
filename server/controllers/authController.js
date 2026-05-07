@@ -177,7 +177,7 @@ exports.login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
+    if (user.isBanned) {return res.status(403).json({message: "Account suspended by admin",});}
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }

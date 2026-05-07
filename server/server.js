@@ -7,6 +7,7 @@ const testRoutes = require("./routes/testRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
 const app = express();
 const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 // middleware
 app.use(express.json());
@@ -18,7 +19,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/users", userRoutes);
 
 
-
+app.use("/api/admin", adminRoutes);
 
 // DB connection
 mongoose.connect(process.env.MONGO_URI)

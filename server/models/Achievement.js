@@ -31,6 +31,9 @@ const achievementSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
+    isPinned: {type: Boolean, default: false,},
+    isFeatured: {type: Boolean, default: false,},
+    reports: [{user: { type: mongoose.Schema.Types.ObjectId,ref: "User",},reason: String,},],
     isTeacherPost: { type: Boolean, default: false },
     isHidden: { type: Boolean, default: false },
     likes: [
