@@ -144,7 +144,6 @@ function StudentDashboard() {
               }
             />
 
-            {/* 🔥 IMAGE UPLOAD */}
             <div className="mb-4">
 
               <label className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-6 cursor-pointer hover:border-[#0a66c2] hover:bg-blue-50 transition">
@@ -184,7 +183,6 @@ function StudentDashboard() {
                 />
               </label>
 
-              {/* 🔥 PREVIEW IMAGES */}
               {previewImages.length > 0 && (
                 <div
                   className={`grid gap-2 mt-4 ${
@@ -206,7 +204,6 @@ function StudentDashboard() {
                         className="h-36 w-full object-cover rounded-xl border"
                       />
 
-                      {/* REMOVE IMAGE */}
                       <button
                         type="button"
                         onClick={() => {
@@ -239,7 +236,6 @@ function StudentDashboard() {
               )}
             </div>
 
-            {/* 🔥 ACTIONS */}
             <div className="flex gap-2">
               <button
                 onClick={handleSubmit}
@@ -270,7 +266,6 @@ function StudentDashboard() {
           </div>
         )}
 
-        {/* 🔥 FEED */}
         {achievements.length === 0 ? (
           <EmptyState />
         ) : (
@@ -284,7 +279,6 @@ function StudentDashboard() {
         )}
       </div>
 
-      {/* 🔥 IMAGE MODAL */}
       {selectedImage && (
         <div
           onClick={() => setSelectedImage(null)}
@@ -300,7 +294,6 @@ function StudentDashboard() {
   );
 }
 
-/* 🔥 POST CARD */
 function PostCard({ data, setSelectedImage }) {
   const initials = data.createdBy?.name
     ?.split(" ")
@@ -378,7 +371,6 @@ function PostCard({ data, setSelectedImage }) {
   );
 }
 
-/* 🔥 EMPTY STATE */
 function EmptyState() {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center text-gray-500 shadow-sm">
@@ -387,7 +379,6 @@ function EmptyState() {
   );
 }
 
-/* 🔥 INPUT */
 const Input = ({ ...props }) => (
   <input
     {...props}
