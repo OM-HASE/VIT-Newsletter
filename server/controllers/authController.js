@@ -7,15 +7,24 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 
 // ================= EMAIL SETUP =================
+// ================= EMAIL SETUP =================
+console.log("SMTP_LOGIN =", process.env.SMTP_LOGIN);
+console.log("SMTP_PASSWORD EXISTS =", !!process.env.SMTP_PASSWORD);
+
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
   secure: false,
+  requireTLS: true,
   auth: {
     user: process.env.SMTP_LOGIN,
     pass: process.env.SMTP_PASSWORD,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
+
 transporter.verify((error, success) => {
   if (error) {
     console.log("SMTP ERROR:", error);
@@ -23,8 +32,6 @@ transporter.verify((error, success) => {
     console.log("SMTP READY");
   }
 });
-console.log(process.env.EMAIL_USER);
-console.log(process.env.EMAIL_PASS);
 // ================= SEND OTP =================
 exports.sendOtp = async (req, res) => {
   try {
@@ -61,7 +68,8 @@ exports.sendOtp = async (req, res) => {
     res.json({ message: "OTP sent successfully" });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("SEND OTP ERROR:", error);
+    res.status(500).json({ message: error.message, code: error.code, });
   }
 };
 
