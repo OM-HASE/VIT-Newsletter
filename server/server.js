@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const testRoutes = require("./routes/testRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
 const app = express();
+app.set("trust proxy", 1);
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
