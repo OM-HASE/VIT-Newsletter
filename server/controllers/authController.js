@@ -8,13 +8,12 @@ const crypto = require("crypto");
 
 // ================= EMAIL SETUP =================
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  host: "smtp-relay.brevo.com",
   port: 587,
   secure: false,
-  family: 4, // Force IPv4
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.SMTP_LOGIN,
+    pass: process.env.SMTP_PASSWORD,
   },
 });
 transporter.verify((error, success) => {
@@ -53,7 +52,7 @@ exports.sendOtp = async (req, res) => {
 
     // send email
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.SMTP_LOGIN,
       to: email,
       subject: "VIT Newsletter OTP",
       text: `Your OTP is ${otp}. Valid for 5 minutes.`
