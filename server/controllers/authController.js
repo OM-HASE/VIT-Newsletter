@@ -11,18 +11,14 @@ const crypto = require("crypto");
 console.log("SMTP_LOGIN =", process.env.SMTP_LOGIN);
 console.log("SMTP_PASSWORD EXISTS =", !!process.env.SMTP_PASSWORD);
 
-const transporter = nodemailer.createTransport({
+cconst transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
-  port: 587,
+  port: 2525,
   secure: false,
-  requireTLS: true,
   auth: {
     user: process.env.SMTP_LOGIN,
     pass: process.env.SMTP_PASSWORD,
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
 });
 
 transporter.verify((error, success) => {
